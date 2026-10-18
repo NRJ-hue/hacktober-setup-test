@@ -122,16 +122,52 @@ def run_agent(
                     status="error",
                 )
 
-        # Untrusted injection citations are removed from findings before verification
-        if suspicious_ids:
-            for finding in parsed.findings:
-                finding.evidence = [
-                    c for c in finding.evidence if c.source_id not in suspicious_ids
-                ]
-
         # Step e: backfill metadata, validate citations, enforce safety guards
         backfilled = backfill_citation_metadata(parsed, request)
         validated, _ = validate_response(backfilled, request)
+
+        # Drop findings whose ALL verified citations point exclusively to suspicious passages.
+        # A finding that also cites at least one clean (non-suspicious) passage is kept.
+        if suspicious_ids and validated.findings:
+            clean_findings = []
+            for finding in validated.findings:
+                verified_cites = [c for c in finding.evidence if c.verified]
+                all_suspicious = bool(verified_cites) and all(
+                    c.source_id in suspicious_ids for c in verified_cites
+                )
+                if all_suspicious:
+                    logger.warning("FINDING_DROPPED_ALL_CITATIONS_SUSPICIOUS")
+                else:
+                    clean_findings.append(finding)
+
+            if len(clean_findings) < len(validated.findings):
+                if not clean_findings:
+                    validated = validated.model_copy(
+                        update={
+                            "findings": [],
+                            "evidence_sufficient": False,
+                            "limitation": "No verifiable evidence supported an answer.",
+                            "status": "abstained",
+                            "answer": (
+                                "I cannot provide an answer because no "
+                                "verifiable evidence was found."
+                            ),
+                        }
+                    )
+                else:
+                    new_answer = (
+                        f"The document addresses: "
+                        f"{', '.join(f.title for f in clean_findings)}."
+                        if validated.status == "answered"
+                        else validated.answer
+                    )
+                    validated = validated.model_copy(
+                        update={
+                            "findings": clean_findings,
+                            "answer": new_answer,
+                        }
+                    )
+
         guarded, _ = enforce_guard(
             validated, request, intent, injection_flagged=injection_flagged
         )
