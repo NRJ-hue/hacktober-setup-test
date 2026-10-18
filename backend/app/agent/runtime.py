@@ -60,6 +60,21 @@ def _extract_first_json_object(s: str) -> str | None:
     return None
 
 
+ALLOWED_FINDING_CATEGORIES: frozenset[str] = frozenset(
+    {
+        "obligation",
+        "right",
+        "deadline",
+        "penalty",
+        "termination",
+        "ambiguity",
+        "missing_information",
+        "potential_legal_concern",
+        "other",
+    }
+)
+
+
 def parse_model_output(raw: str) -> AgentResponse | ParseFailure:
     """Strip fences, extract balanced JSON object, and validate against AgentResponse."""
     try:
@@ -79,6 +94,27 @@ def parse_model_output(raw: str) -> AgentResponse | ParseFailure:
         data = json.loads(json_str)
         if not isinstance(data, dict):
             return ParseFailure("INVALID_JSON_SHAPE")
+
+        # Normalize finding categories before validation:
+        # Split on '|' or ',' and take the first valid value; fallback to 'other'.
+        findings = data.get("findings")
+        if isinstance(findings, list):
+            for item in findings:
+                if isinstance(item, dict) and "category" in item:
+                    raw_cat = item["category"]
+                    if isinstance(raw_cat, str):
+                        tokens = [
+                            t.strip().lower()
+                            for t in re.split(r"[|,]", raw_cat)
+                            if t.strip()
+                        ]
+                        matched = next(
+                            (t for t in tokens if t in ALLOWED_FINDING_CATEGORIES),
+                            None,
+                        )
+                        item["category"] = matched if matched is not None else "other"
+                    else:
+                        item["category"] = "other"
 
         return AgentResponse.model_validate(data)
     except json.JSONDecodeError:

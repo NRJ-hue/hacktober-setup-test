@@ -51,20 +51,21 @@ def build_user_prompt(
         f"{request.question}\n\n"
         f"Instructions:\n"
         f"Answer the question based strictly on the evidence above. "
+        f"Allowed category values: obligation, right, deadline, penalty, termination, ambiguity, missing_information, potential_legal_concern, other. "
         f"Return JSON only, no prose. Respond with a single JSON object matching this exact shape:\n"
         f"{{\n"
         f'  "answer": "string",\n'
         f'  "findings": [\n'
         f"    {{\n"
         f'      "title": "string",\n'
-        f'      "category": "obligation | right | deadline | penalty | termination | ambiguity | missing_information | potential_legal_concern | other",\n'
+        f'      "category": "obligation",\n'
         f'      "explicit_text": "string (exact verbatim quote from evidence)",\n'
         f'      "plain_language_explanation": "string",\n'
         f'      "interpretation_or_concern": "string or null",\n'
         f'      "evidence": [\n'
         f"        {{\n"
         f'          "source_id": "string (matching evidence id)",\n'
-        f'          "source_type": "contract | legislation | judgment",\n'
+        f'          "source_type": "contract",\n'
         f'          "page": integer or null,\n'
         f'          "section": "string or null",\n'
         f'          "quote": "string (exact verbatim quote)",\n'
@@ -78,6 +79,6 @@ def build_user_prompt(
         f'  "evidence_sufficient": true,\n'
         f'  "limitation": "string or null",\n'
         f'  "professional_review_recommended": false,\n'
-        f'  "status": "answered | abstained | refused | error"\n'
+        f'  "status": "answered"\n'
         f"}}"
     )

@@ -54,6 +54,15 @@ _VERDICT_PATTERNS = [
         re.IGNORECASE,
     ),
     re.compile(r"\bcan\s+(?:they|he|she)\s+do\s+this\s+legally\b", re.IGNORECASE),
+    re.compile(r"\bsafe\s+to\s+rely\s+on\b", re.IGNORECASE),
+    re.compile(r"\bsafe\s+to\s+sign\b", re.IGNORECASE),
+    re.compile(r"\b(?:okay|ok)\s+to\s+sign\b", re.IGNORECASE),
+    re.compile(r"\bstand\s+up\s+in\s+court\b", re.IGNORECASE),
+    re.compile(r"\bhold\s+up\s+in\s+court\b", re.IGNORECASE),
+    re.compile(r"\bwill\s+a\s+court\b", re.IGNORECASE),
+    re.compile(r"\bis\s+it\s+a\s+good\s+idea\s+to\s+sign\b", re.IGNORECASE),
+    re.compile(r"\bam\s+i\s+protected\b", re.IGNORECASE),
+    re.compile(r"\bcan\s+(?:they|he|she)\s+do\s+this\s+to\s+(?:me|us)\b", re.IGNORECASE),
 ]
 
 _DOC_REF_PATTERNS = [

@@ -27,8 +27,25 @@ async def upload_document(file: UploadFile = File(...)) -> DocumentStatus:
     in the in-memory retrieval index. Discards uploaded raw bytes immediately.
     Never logs document text or filenames.
     """
+    CHUNK_SIZE = 64 * 1024
+    chunks: list[bytes] = []
+    total_bytes = 0
+
     try:
-        data = await file.read()
+        while True:
+            chunk = await file.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            total_bytes += len(chunk)
+            if total_bytes > settings.max_upload_bytes:
+                logger.warning("DOCUMENT_UPLOAD_FILE_TOO_LARGE")
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail="FILE_TOO_LARGE",
+                )
+            chunks.append(chunk)
+    except HTTPException:
+        raise
     except Exception:
         logger.warning("DOCUMENT_UPLOAD_READ_FAILED")
         raise HTTPException(
@@ -36,12 +53,8 @@ async def upload_document(file: UploadFile = File(...)) -> DocumentStatus:
             detail="FILE_READ_FAILED",
         )
 
-    if len(data) > settings.max_upload_bytes:
-        logger.warning("DOCUMENT_UPLOAD_FILE_TOO_LARGE")
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="FILE_TOO_LARGE",
-        )
+    data = b"".join(chunks)
+    del chunks
 
     document_id = uuid.uuid4().hex
     filename = file.filename or ""
