@@ -13,12 +13,12 @@ __pycache__/
 *.gguf
 *.bin
 *.safetensors
-models/
+/models/
 
 # Data and storage
-data/
-uploads/
-storage/
+/data/
+/uploads/
+/storage/
 
 # Vector indices
 *.faiss
