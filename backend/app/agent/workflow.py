@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Optional
 
 from backend.app.agent.prompts import RETRY_SUFFIX, SYSTEM_PROMPT, build_user_prompt
@@ -24,6 +25,16 @@ from backend.app.safety.response_guard import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def get_runtime() -> LLMRuntime:
+    """Factory to get the configured runtime based on LEGAL_AGENT_RUNTIME env var."""
+    runtime_type = os.getenv("LEGAL_AGENT_RUNTIME", "mock").strip().lower()
+    if runtime_type == "ollama":
+        from backend.app.agent.ollama_runtime import OllamaRuntime
+
+        return OllamaRuntime()
+    return MockRuntime("good")
 
 
 def run_agent(
@@ -54,9 +65,9 @@ def run_agent(
                 status="abstained",
             )
 
-        # Step c: Use default MockRuntime if not provided
+        # Step c: Use configured runtime if not provided
         if runtime is None:
-            runtime = MockRuntime("good")
+            runtime = get_runtime()
 
         user_prompt = build_user_prompt(request, suspicious_ids=suspicious_ids)
         try:
